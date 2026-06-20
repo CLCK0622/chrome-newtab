@@ -4,9 +4,11 @@ import { Clock } from './components/Clock';
 import { SearchBox } from './components/SearchBox';
 import { Quote } from './components/Quote';
 import { Weather } from './components/Weather';
-import { Usage } from './components/Usage';
-import { Bookmarks } from './components/Bookmarks';
+import { UsageCard } from './components/UsageCard';
+import { Calendar } from './components/Calendar';
+import { QuickLinks } from './components/QuickLinks';
 import { loadSettings } from './lib/settings';
+import { t } from './lib/i18n';
 
 export function App() {
   const settings = useMemo(() => loadSettings(), []);
@@ -23,10 +25,17 @@ export function App() {
         <SearchBox />
       </section>
 
-      <section className="grid">
-        <Weather />
-        <Usage />
-        <Bookmarks />
+      <section className="main">
+        {/* 顶排五等分：天气(1) | Claude(1) | Codex(1) | 日历(span 2) */}
+        <div className="grid-top">
+          <Weather />
+          <UsageCard provider="claude" title={t('claude')} />
+          <UsageCard provider="codex" title={t('codex')} />
+          <Calendar />
+        </div>
+
+        {/* 下方常用链接横向等分一排 */}
+        <QuickLinks />
       </section>
     </main>
   );

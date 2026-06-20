@@ -29,36 +29,36 @@ export interface GeocodeHit {
   admin1?: string;
 }
 
-// WMO weather code → emoji + 中文描述。覆盖常见档位，未知码回退到「天气」。
+// WMO weather code → emoji + English description. Common buckets; unknown codes fall back.
 const WMO: Record<number, { icon: string; label: string }> = {
-  0: { icon: '☀️', label: '晴' },
-  1: { icon: '🌤️', label: '大致晴朗' },
-  2: { icon: '⛅', label: '局部多云' },
-  3: { icon: '☁️', label: '阴' },
-  45: { icon: '🌫️', label: '雾' },
-  48: { icon: '🌫️', label: '雾凇' },
-  51: { icon: '🌦️', label: '毛毛雨' },
-  53: { icon: '🌦️', label: '小雨' },
-  55: { icon: '🌧️', label: '密集毛毛雨' },
-  61: { icon: '🌧️', label: '小雨' },
-  63: { icon: '🌧️', label: '中雨' },
-  65: { icon: '🌧️', label: '大雨' },
-  71: { icon: '🌨️', label: '小雪' },
-  73: { icon: '🌨️', label: '中雪' },
-  75: { icon: '❄️', label: '大雪' },
-  77: { icon: '🌨️', label: '雪粒' },
-  80: { icon: '🌦️', label: '阵雨' },
-  81: { icon: '🌧️', label: '强阵雨' },
-  82: { icon: '⛈️', label: '暴雨' },
-  85: { icon: '🌨️', label: '阵雪' },
-  86: { icon: '❄️', label: '强阵雪' },
-  95: { icon: '⛈️', label: '雷雨' },
-  96: { icon: '⛈️', label: '雷雨伴冰雹' },
-  99: { icon: '⛈️', label: '强雷雨冰雹' },
+  0: { icon: '☀️', label: 'Clear' },
+  1: { icon: '🌤️', label: 'Mostly clear' },
+  2: { icon: '⛅', label: 'Partly cloudy' },
+  3: { icon: '☁️', label: 'Overcast' },
+  45: { icon: '🌫️', label: 'Fog' },
+  48: { icon: '🌫️', label: 'Rime fog' },
+  51: { icon: '🌦️', label: 'Light drizzle' },
+  53: { icon: '🌦️', label: 'Drizzle' },
+  55: { icon: '🌧️', label: 'Dense drizzle' },
+  61: { icon: '🌧️', label: 'Light rain' },
+  63: { icon: '🌧️', label: 'Rain' },
+  65: { icon: '🌧️', label: 'Heavy rain' },
+  71: { icon: '🌨️', label: 'Light snow' },
+  73: { icon: '🌨️', label: 'Snow' },
+  75: { icon: '❄️', label: 'Heavy snow' },
+  77: { icon: '🌨️', label: 'Snow grains' },
+  80: { icon: '🌦️', label: 'Showers' },
+  81: { icon: '🌧️', label: 'Heavy showers' },
+  82: { icon: '⛈️', label: 'Violent showers' },
+  85: { icon: '🌨️', label: 'Snow showers' },
+  86: { icon: '❄️', label: 'Heavy snow showers' },
+  95: { icon: '⛈️', label: 'Thunderstorm' },
+  96: { icon: '⛈️', label: 'Thunderstorm, hail' },
+  99: { icon: '⛈️', label: 'Severe thunderstorm' },
 };
 
 export function describeWeather(code: number): { icon: string; label: string } {
-  return WMO[code] ?? { icon: '🌡️', label: '天气' };
+  return WMO[code] ?? { icon: '🌡️', label: 'Weather' };
 }
 
 export async function fetchWeather(
@@ -80,7 +80,7 @@ export async function fetchWeather(
   url.searchParams.set('forecast_days', '1');
 
   const res = await fetch(url.toString());
-  if (!res.ok) throw new Error(`天气请求失败：${res.status}`);
+  if (!res.ok) throw new Error(`Weather request failed: ${res.status}`);
   const data = await res.json();
 
   return {
@@ -106,11 +106,11 @@ export async function searchCity(query: string): Promise<GeocodeHit[]> {
   const url = new URL('https://geocoding-api.open-meteo.com/v1/search');
   url.searchParams.set('name', trimmed);
   url.searchParams.set('count', '5');
-  url.searchParams.set('language', 'zh');
+  url.searchParams.set('language', 'en');
   url.searchParams.set('format', 'json');
 
   const res = await fetch(url.toString());
-  if (!res.ok) throw new Error(`城市搜索失败：${res.status}`);
+  if (!res.ok) throw new Error(`City search failed: ${res.status}`);
   const data = await res.json();
   return (data.results ?? []).map((r: any) => ({
     name: r.name,
@@ -124,7 +124,7 @@ export async function searchCity(query: string): Promise<GeocodeHit[]> {
 export function getBrowserLocation(): Promise<{ latitude: number; longitude: number }> {
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) {
-      reject(new Error('浏览器不支持定位'));
+      reject(new Error('Geolocation not supported'));
       return;
     }
     navigator.geolocation.getCurrentPosition(

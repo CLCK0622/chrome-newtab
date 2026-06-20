@@ -6,18 +6,18 @@ export interface Quote {
 }
 
 const QUOTES: Quote[] = [
-  { text: '我们必须想象西西弗斯是幸福的。', author: '加缪' },
-  { text: '风物长宜放眼量。', author: '毛泽东' },
+  { text: 'We must imagine Sisyphus happy.', author: 'Albert Camus' },
   { text: 'Stay hungry, stay foolish.', author: 'Steve Jobs' },
-  { text: '不积跬步，无以至千里。', author: '荀子' },
   { text: 'The unexamined life is not worth living.', author: 'Socrates' },
-  { text: '宠辱不惊，看庭前花开花落。', author: '《菜根谭》' },
   { text: 'Simplicity is the ultimate sophistication.', author: 'Leonardo da Vinci' },
-  { text: '路漫漫其修远兮，吾将上下而求索。', author: '屈原' },
-  { text: 'What we know is a drop, what we don’t know is an ocean.', author: 'Newton' },
-  { text: '行到水穷处，坐看云起时。', author: '王维' },
+  { text: 'What we know is a drop, what we don’t know is an ocean.', author: 'Isaac Newton' },
   { text: 'Well done is better than well said.', author: 'Benjamin Franklin' },
-  { text: '博学之，审问之，慎思之，明辨之，笃行之。', author: '《中庸》' },
+  { text: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' },
+  { text: 'Whereof one cannot speak, thereof one must be silent.', author: 'Ludwig Wittgenstein' },
+  { text: 'Knowing yourself is the beginning of all wisdom.', author: 'Aristotle' },
+  { text: 'What gets measured gets managed.', author: 'Peter Drucker' },
+  { text: 'The future is already here — it’s just not evenly distributed.', author: 'William Gibson' },
+  { text: 'Make it work, make it right, make it fast.', author: 'Kent Beck' },
 ];
 
 export function quoteOfTheDay(date = new Date()): Quote {

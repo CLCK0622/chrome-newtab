@@ -67,6 +67,21 @@ export const mockUsageProvider: UsageProvider = {
 /** 当前生效的 provider。EVO-77 接通后改这一行即可。 */
 export const usageProvider: UsageProvider = mockUsageProvider;
 
+// Claude / Codex 拆成两个独立卡片，但共用同一份快照（一次拉取）。
+let snapshotPromise: Promise<UsageSnapshot> | null = null;
+
+export function getUsageSnapshotOnce(): Promise<UsageSnapshot> {
+  if (!snapshotPromise) snapshotPromise = usageProvider.getUsage();
+  return snapshotPromise;
+}
+
+export function metricFor(
+  snapshot: UsageSnapshot,
+  provider: UsageProviderId,
+): UsageMetric | undefined {
+  return snapshot.metrics.find((m) => m.provider === provider);
+}
+
 export function formatUsageValue(n: number, unit: string): string {
   if (unit === 'tokens') {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;

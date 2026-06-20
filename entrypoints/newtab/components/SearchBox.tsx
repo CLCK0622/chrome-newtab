@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { t } from '../lib/i18n';
 
 function looksLikeUrl(s: string): boolean {
   const t = s.trim();
@@ -38,10 +39,10 @@ export function SearchBox() {
         ref={inputRef}
         className="search__input"
         type="text"
-        placeholder="搜索，或输入网址直达…"
+        placeholder={t('searchPlaceholder')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        aria-label="搜索或输入网址"
+        aria-label={t('searchPlaceholder')}
         autoComplete="off"
         spellCheck={false}
       />

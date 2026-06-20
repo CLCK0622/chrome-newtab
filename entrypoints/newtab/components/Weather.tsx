@@ -9,6 +9,7 @@ import {
   type WeatherResult,
 } from '../lib/weather';
 import { loadSettings, saveSettings, type SavedCity } from '../lib/settings';
+import { t } from '../lib/i18n';
 
 type Status = 'idle' | 'locating' | 'loading' | 'ready' | 'error';
 
@@ -34,7 +35,7 @@ export function Weather() {
       setStatus('ready');
     } catch (e: any) {
       if (id !== reqId.current) return;
-      setError(e?.message ?? '加载失败');
+      setError(e?.message ?? 'Failed to load');
       setStatus('error');
     }
   }
@@ -54,9 +55,8 @@ export function Weather() {
         loadFor(pos.latitude, pos.longitude);
       } catch {
         if (cancelled) return;
-        // 定位失败/被拒：提示手填城市
         setStatus('error');
-        setError('无法定位，请手动选择城市');
+        setError(t('cantLocate'));
       }
     })();
     return () => {
@@ -74,7 +74,7 @@ export function Weather() {
       return;
     }
     setSearching(true);
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       try {
         const results = await searchCity(q);
         setHits(results);
@@ -84,12 +84,12 @@ export function Weather() {
         setSearching(false);
       }
     }, 350);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [query, editing]);
 
   function pickCity(hit: GeocodeHit) {
     const saved: SavedCity = {
-      name: hit.admin1 ? `${hit.name}·${hit.admin1}` : hit.name,
+      name: hit.admin1 ? `${hit.name}, ${hit.admin1}` : hit.name,
       latitude: hit.latitude,
       longitude: hit.longitude,
     };
@@ -111,22 +111,22 @@ export function Weather() {
       loadFor(pos.latitude, pos.longitude);
     } catch {
       setStatus('error');
-      setError('无法定位，请手动选择城市');
+      setError(t('cantLocate'));
     }
   }
 
-  const locationLabel = city ? city.name : weather ? '当前位置' : '—';
+  const locationLabel = city ? city.name : weather ? t('currentLocation') : '—';
 
   return (
     <Card
-      title="天气"
+      title={t('weather')}
       aside={
         <button
           className="link-btn"
           onClick={() => setEditing((v) => !v)}
           aria-expanded={editing}
         >
-          {city ? city.name : '设置城市'}
+          {city ? city.name : t('setCity')}
         </button>
       }
     >
@@ -134,15 +134,15 @@ export function Weather() {
         <div className="weather__editor">
           <input
             className="text-input"
-            placeholder="搜索城市（如 Shanghai / 北京）"
+            placeholder={t('searchCityPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
           />
           <button className="link-btn" onClick={useMyLocation}>
-            📍 用我的定位
+            📍 {t('useMyLocation')}
           </button>
-          {searching && <p className="muted small">搜索中…</p>}
+          {searching && <p className="muted small">{t('searching')}</p>}
           {hits.length > 0 && (
             <ul className="weather__hits">
               {hits.map((h, i) => (
@@ -160,14 +160,14 @@ export function Weather() {
       )}
 
       {(status === 'locating' || status === 'loading') && (
-        <p className="muted">{status === 'locating' ? '定位中…' : '加载天气…'}</p>
+        <p className="muted">{status === 'locating' ? t('locating') : t('loadingWeather')}</p>
       )}
 
       {status === 'error' && !editing && (
         <div className="weather__error">
           <p className="muted">{error}</p>
           <button className="link-btn" onClick={() => setEditing(true)}>
-            选择城市
+            {t('pickCity')}
           </button>
         </div>
       )}
@@ -181,7 +181,7 @@ export function Weather() {
             <div>
               <div className="weather__temp">{weather.current.temperature}°</div>
               <div className="muted small">
-                {describeWeather(weather.current.weatherCode).label} · 体感{' '}
+                {describeWeather(weather.current.weatherCode).label} · {t('feelsLike')}{' '}
                 {weather.current.apparentTemperature}°
               </div>
             </div>
