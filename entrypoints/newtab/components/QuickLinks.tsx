@@ -10,6 +10,31 @@ import {
 } from '../lib/quicklinks';
 import { t } from '../lib/i18n';
 
+// favicon 取不到时回退到标题首字母。
+function LinkIcon({ link }: { link: QuickLink }) {
+  const [broken, setBroken] = useState(false);
+  const src = faviconFor(link.url, link.icon);
+  if (broken || !src) {
+    const letter = (link.title || link.url).trim().charAt(0).toUpperCase() || '?';
+    return (
+      <span className="ql__letter" aria-hidden>
+        {letter}
+      </span>
+    );
+  }
+  return (
+    <img
+      className="ql__favicon"
+      src={src}
+      alt=""
+      width={32}
+      height={32}
+      loading="lazy"
+      onError={() => setBroken(true)}
+    />
+  );
+}
+
 interface DraftProps {
   initial: { title: string; url: string };
   onSave: (v: { title: string; url: string }) => void;
@@ -124,14 +149,7 @@ export function QuickLinks() {
               ) : (
                 <>
                   <a className="ql__link" href={normalizeUrl(link.url)} title={link.title}>
-                    <img
-                      className="ql__favicon"
-                      src={faviconFor(link.url, link.icon)}
-                      alt=""
-                      width={28}
-                      height={28}
-                      loading="lazy"
-                    />
+                    <LinkIcon link={link} />
                     <span className="ql__label">{link.title}</span>
                   </a>
                   {editing && (
