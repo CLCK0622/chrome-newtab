@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Card } from './Card';
+import { Icon } from './Icon';
 import {
+  formatAgo,
+  formatResetsIn,
   formatUsageValue,
   getUsageSnapshotOnce,
   metricsFor,
@@ -10,35 +12,44 @@ import {
 } from '../lib/usage';
 import { t } from '../lib/i18n';
 
+const PROVIDER_META: Record<UsageProviderId, { cls: string; symbol: string }> = {
+  claude: { cls: 'card-claude', symbol: 'auto_awesome' },
+  codex: { cls: 'card-codex', symbol: 'code' },
+};
+
 function WindowRow({ metric }: { metric: UsageMetric }) {
   const pct =
     metric.limit && metric.limit > 0
-      ? Math.min(100, Math.round((metric.used / metric.limit) * 100))
-      : null;
+      ? Math.min(100, (metric.used / metric.limit) * 100)
+      : 0;
+  const resets = formatResetsIn(metric.resetsAt);
   return (
-    <div className="usage-window">
-      <div className="usage-window__head">
-        <span className="usage-window__label">{WINDOW_LABEL[metric.window]}</span>
-        <span className="usage-window__value">
-          {formatUsageValue(metric.used, metric.unit)}
+    <div>
+      <div className="usage__win-head">
+        <span className="usage__label">{WINDOW_LABEL[metric.window]}</span>
+        <span>
+          <b className="usage__value">{formatUsageValue(metric.used, metric.unit)}</b>{' '}
           {metric.limit != null && (
-            <span className="muted">
-              {' / '}
-              {formatUsageValue(metric.limit, metric.unit)}
-            </span>
+            <span className="usage__limit">/ {formatUsageValue(metric.limit, metric.unit)}</span>
           )}
         </span>
       </div>
-      {pct != null && (
-        <div className="usage__bar" role="progressbar" aria-valuenow={pct}>
-          <span style={{ width: `${pct}%` }} />
+      <div className="usage__bar">
+        <span style={{ width: `${pct}%` }} />
+      </div>
+      {resets && (
+        <div className="usage__reset">
+          <span className="usage__reset-l">
+            <Icon name="schedule" size={13} />
+            {t('resetsIn')}
+          </span>
+          <span className="mono">{resets}</span>
         </div>
       )}
     </div>
   );
 }
 
-// Claude / Codex 各一格，复用同一份快照（getUsageSnapshotOnce 只拉一次），按窗口展示多条。
 export function UsageCard({
   provider,
   title,
@@ -49,6 +60,7 @@ export function UsageCard({
   const [metrics, setMetrics] = useState<UsageMetric[] | null>(null);
   const [isMock, setIsMock] = useState(false);
   const [error, setError] = useState(false);
+  const meta = PROVIDER_META[provider];
 
   useEffect(() => {
     let cancelled = false;
@@ -64,27 +76,40 @@ export function UsageCard({
     };
   }, [provider]);
 
+  const updatedAt = metrics && metrics.length > 0 ? metrics[0].updatedAt : null;
+
   return (
-    <Card
-      title={title}
-      aside={
-        isMock ? (
-          <span className="badge" title="Placeholder until EVO-77 is wired up">
-            {t('placeholder')}
+    <section className={`m3card ${meta.cls}`}>
+      <div className="m3card__head">
+        <div className="m3card__head-l">
+          <span className="m3icon">
+            <Icon name={meta.symbol} size={20} />
           </span>
-        ) : null
-      }
-    >
+          <span className="m3card__title">{title}</span>
+        </div>
+        {isMock && <span className="m3chip m3chip--badge">{t('placeholder')}</span>}
+      </div>
+
       {error && <p className="muted">{t('usageUnavailable')}</p>}
       {!error && !metrics && <p className="muted">{t('loading')}</p>}
       {metrics && metrics.length > 0 && (
-        <div className="usage-card">
+        <div className="usage">
           {metrics.map((m) => (
             <WindowRow key={`${m.provider}-${m.window}`} metric={m} />
           ))}
+          {updatedAt && (
+            <div className="usage__foot">
+              <span className="usage__foot-l">
+                <Icon name="sync" size={13} />
+                {t('usageUpdated')}
+              </span>
+              <span>
+                <span className="mono">{formatAgo(updatedAt)}</span> {t('ago')}
+              </span>
+            </div>
+          )}
         </div>
       )}
-      {metrics && metrics.length === 0 && <p className="muted">{t('usageUnavailable')}</p>}
-    </Card>
+    </section>
   );
 }

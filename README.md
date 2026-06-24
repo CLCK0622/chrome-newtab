@@ -1,25 +1,24 @@
 # Elegant New Tab
 
-雅致的自定义新标签页 dashboard。基于 [wxt.dev](https://wxt.dev) + React + TypeScript，输出 MV3 Chrome 扩展。
+自定义新标签页 dashboard。基于 [wxt.dev](https://wxt.dev) + React + TypeScript，输出 MV3 Chrome 扩展。**Material 3 Expressive** 视觉（v4，按 Kevin 的 M3 设计稿重做）。
 
 默认 **English** UI（i18n 结构预留，见 `lib/i18n.ts`）。
 
-## 功能（v3）
+## 功能
 
-- **Greeting + date**（左上，按时段 Good Morning / Afternoon / Evening）+ **live clock**（右上，秒级）。
-- **Weather**：Open-Meteo（免 key）。优先浏览器定位，可手动搜索/切换城市（localStorage 记忆）。
-- **Usage**：Claude / Codex **各占独立一格**，每格展示**双窗口（5h + 7d）**用量/上限/进度；占位数据；接口 `UsageProvider`（`lib/usage.ts`）已约定好，EVO-77 就绪后替换 `usageProvider` 一行即可。
-- **Calendar**（占 2 格）：组件位 + `CalendarProvider` 接口；优先 **iCal secret-URL 路径**（粘贴私密 .ics 地址 → fetch + 客户端解析，存 `chrome.storage.local`），OAuth 作为后续重路径预留。未配置时显示占位与连接入口。
-- **Quick Links**（取代书签）：竖向卡片（上 favicon / 下文字，取不到回退首字母）；用户可编辑列表（增/删/改 + 排序），存 `chrome.storage.local`（localStorage 兜底）。**不再读 `chrome.bookmarks`，已移除 `bookmarks` 权限。**
-- **每日一句**（serif 大字）+ **搜索框**（打开即聚焦，回车 Google 搜索或网址直达）。
+- **Greeting + date**（左上，按时段 Good Morning / Afternoon / Evening，date pill）+ **live clock**（右上，Roboto Mono，蓝色冒号 + 秒数 pill）。
+- **Weather**：Open-Meteo（免 key）。优先浏览器定位，可手动搜索/切换城市（localStorage 记忆）。M3 绿色 tonal 卡。
+- **Usage**：Claude（紫）/ Codex（粉）**各占独立 tonal 卡**，每卡展示**双窗口（5h + 7d）**用量/上限/进度条 + 「Resets in」+「Usage updated … ago」；占位数据；接口 `UsageProvider`（`lib/usage.ts`），EVO-77 就绪后替换 `usageProvider` 一行即可。
+- **Calendar**（略宽 1.4fr，蓝色 tonal 卡）：`CalendarProvider` 接口 + iCal secret-URL 路径（粘贴私密 .ics → fetch + 客户端解析，存 `chrome.storage.local`），OAuth 预留。未配置显示连接入口；已连接显示今日事件（彩色左条 + 类型图标 + View all）。
+- **Shortcuts**（原 Quick Links）：M3 圆形 tonal 图标块（上 favicon/首字母 / 下标签），用户可编辑（增/删/改 + 排序），存 `chrome.storage.local`（localStorage 兜底）。**不读 `chrome.bookmarks`，无 `bookmarks` 权限。**
+- **每日一句** + **搜索框**（即聚焦，回车 Google 搜索或网址直达）。
 
-## 布局
+## 设计 / 字体
 
-顶排五等分：Weather(1) ｜ Claude(1) ｜ Codex(1) ｜ Calendar(span 2)；下方 Quick Links 横向等分一排。
-
-## 设计
-
-100vh 全高、无页面滚动条、fit-to-viewport CSS grid、响应式 reflow（窄屏顶排堆叠）、serif 字体（Newsreader / Source Serif 4）、低饱和暖调奶白，含深色模式。
+- **Material 3 Expressive**：大圆角 tonal 卡（radius 18/29/36px、pill 999px）、M3 表达性配色与状态色、弹跳缓动（hover 卡片上浮、圆形图标 morph 成 squircle）。
+- **字体本地打包**（MV3 不依赖 CDN，离线可用，见 `public/fonts` + `fonts.css`）：**DM Sans**（正文）、**Roboto Mono**（数字/时钟/用量）、**Material Symbols Rounded**（图标，subset）。
+- 顶排 grid `1fr 1fr 1fr 1.4fr`：Weather｜Claude｜Codex｜Calendar；下方 Shortcuts。
+- 桌面 100vh 全高、无滚动条、fit-to-viewport；≤1080px 优雅 reflow（2 列 / 单列堆叠，自然高度 + 隐藏滚动条）。
 
 ## 开发
 

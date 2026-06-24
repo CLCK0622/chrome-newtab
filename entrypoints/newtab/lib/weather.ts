@@ -61,6 +61,20 @@ export function describeWeather(code: number): { icon: string; label: string } {
   return WMO[code] ?? { icon: '🌡️', label: 'Weather' };
 }
 
+// WMO code → Material Symbols Rounded 图标名（M3 设计用）。
+export function weatherSymbol(code: number, isDay = true): string {
+  if (code === 0) return isDay ? 'sunny' : 'clear_day';
+  if (code === 1 || code === 2) return 'partly_cloudy_day';
+  if (code === 3) return 'cloud';
+  if (code === 45 || code === 48) return 'foggy';
+  if (code >= 51 && code <= 67) return 'rainy';
+  if (code >= 71 && code <= 77) return 'weather_snowy';
+  if (code >= 80 && code <= 82) return 'rainy';
+  if (code >= 85 && code <= 86) return 'weather_snowy';
+  if (code >= 95) return 'thunderstorm';
+  return 'partly_cloudy_day';
+}
+
 export async function fetchWeather(
   latitude: number,
   longitude: number,

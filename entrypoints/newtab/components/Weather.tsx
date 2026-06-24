@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Card } from './Card';
+import { Icon } from './Icon';
 import {
   describeWeather,
   fetchWeather,
@@ -17,7 +17,6 @@ export function Weather() {
   const [city, setCity] = useState<SavedCity | null>(() => loadSettings().city);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
   const [status, setStatus] = useState<Status>('idle');
-  const [error, setError] = useState<string>('');
   const [editing, setEditing] = useState(false);
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<GeocodeHit[]>([]);
@@ -27,20 +26,17 @@ export function Weather() {
   async function loadFor(lat: number, lon: number) {
     const id = ++reqId.current;
     setStatus('loading');
-    setError('');
     try {
       const result = await fetchWeather(lat, lon);
-      if (id !== reqId.current) return; // 已被更新的请求覆盖
+      if (id !== reqId.current) return;
       setWeather(result);
       setStatus('ready');
-    } catch (e: any) {
+    } catch {
       if (id !== reqId.current) return;
-      setError(e?.message ?? 'Failed to load');
       setStatus('error');
     }
   }
 
-  // 初次加载：有保存城市用城市，否则尝试浏览器定位。
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -56,7 +52,6 @@ export function Weather() {
       } catch {
         if (cancelled) return;
         setStatus('error');
-        setError(t('cantLocate'));
       }
     })();
     return () => {
@@ -65,7 +60,6 @@ export function Weather() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 城市搜索（防抖）
   useEffect(() => {
     if (!editing) return;
     const q = query.trim();
@@ -76,8 +70,7 @@ export function Weather() {
     setSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const results = await searchCity(q);
-        setHits(results);
+        setHits(await searchCity(q));
       } catch {
         setHits([]);
       } finally {
@@ -111,91 +104,89 @@ export function Weather() {
       loadFor(pos.latitude, pos.longitude);
     } catch {
       setStatus('error');
-      setError(t('cantLocate'));
     }
   }
 
-  const locationLabel = city ? city.name : weather ? t('currentLocation') : '—';
+  // 头部图标固定 partly_cloudy_day（与设计稿一致，且在本地打包的图标子集内）。
+  const headSymbol = 'partly_cloudy_day';
+  const locationLabel = city ? city.name : t('currentLocation');
 
   return (
-    <Card
-      title={t('weather')}
-      aside={
-        <button
-          className="link-btn"
-          onClick={() => setEditing((v) => !v)}
-          aria-expanded={editing}
-        >
+    <section className="m3card card-weather">
+      <div className="m3card__head">
+        <div className="m3card__head-l">
+          <span className="m3icon">
+            <Icon name={headSymbol} size={20} />
+          </span>
+          <span className="m3card__title">{t('weather')}</span>
+        </div>
+        <button className="m3chip m3chip--soft" onClick={() => setEditing((v) => !v)}>
           {city ? city.name : t('setCity')}
         </button>
-      }
-    >
-      {editing && (
-        <div className="weather__editor">
-          <input
-            className="text-input"
-            placeholder={t('searchCityPlaceholder')}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            autoFocus
-          />
-          <button className="link-btn" onClick={useMyLocation}>
-            📍 {t('useMyLocation')}
-          </button>
-          {searching && <p className="muted small">{t('searching')}</p>}
-          {hits.length > 0 && (
-            <ul className="weather__hits">
-              {hits.map((h, i) => (
-                <li key={`${h.latitude},${h.longitude},${i}`}>
-                  <button className="weather__hit" onClick={() => pickCity(h)}>
-                    {h.name}
-                    {h.admin1 ? `, ${h.admin1}` : ''}
-                    {h.country ? ` · ${h.country}` : ''}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+      </div>
+
+      {editing ? (
+        <div className="weather__body">
+          <div className="weather__editor">
+            <input
+              className="cal__input"
+              placeholder={t('searchCityPlaceholder')}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+            />
+            <button className="m3chip m3chip--soft weather__btn" onClick={useMyLocation}>
+              {t('useMyLocation')}
+            </button>
+            {searching && <span className="cal__msg">{t('searching')}</span>}
+            {hits.length > 0 && (
+              <ul className="weather__hits">
+                {hits.map((h, i) => (
+                  <li key={`${h.latitude},${h.longitude},${i}`}>
+                    <button className="weather__hit" onClick={() => pickCity(h)}>
+                      {h.name}
+                      {h.admin1 ? `, ${h.admin1}` : ''}
+                      {h.country ? ` · ${h.country}` : ''}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      )}
-
-      {(status === 'locating' || status === 'loading') && (
-        <p className="muted">{status === 'locating' ? t('locating') : t('loadingWeather')}</p>
-      )}
-
-      {status === 'error' && !editing && (
-        <div className="weather__error">
-          <p className="muted">{error}</p>
-          <button className="link-btn" onClick={() => setEditing(true)}>
+      ) : status === 'ready' && weather ? (
+        <div className="weather__body">
+          <div className="weather__now">
+            <span className="weather__temp">{weather.current.temperature}°</span>
+          </div>
+          <div className="weather__desc">
+            {describeWeather(weather.current.weatherCode).label} · {t('feelsLike')}{' '}
+            {weather.current.apparentTemperature}°
+          </div>
+          <div className="weather__range">
+            <span>↑{weather.today.tempMax}° ↓{weather.today.tempMin}°</span>
+            <span>{locationLabel}</span>
+          </div>
+        </div>
+      ) : status === 'locating' || status === 'loading' ? (
+        <div className="weather__body">
+          <Icon name="location_on" size={34} color="var(--accent)" />
+          <div className="weather__msg">
+            {status === 'locating' ? t('locating') : t('loadingWeather')}
+          </div>
+        </div>
+      ) : (
+        <div className="weather__body">
+          <Icon name="location_off" size={34} color="var(--accent)" />
+          <div className="weather__msg">{t('cantLocate')}</div>
+          <button
+            className="m3chip m3chip--filled weather__btn"
+            onClick={() => setEditing(true)}
+          >
             {t('pickCity')}
           </button>
         </div>
       )}
-
-      {status === 'ready' && weather && (
-        <div className="weather">
-          <div className="weather__now">
-            <span className="weather__icon">
-              {describeWeather(weather.current.weatherCode).icon}
-            </span>
-            <div>
-              <div className="weather__temp">{weather.current.temperature}°</div>
-              <div className="muted small">
-                {describeWeather(weather.current.weatherCode).label} · {t('feelsLike')}{' '}
-                {weather.current.apparentTemperature}°
-              </div>
-            </div>
-          </div>
-          <div className="weather__meta">
-            <span className="muted small">{locationLabel}</span>
-            <span className="weather__range">
-              ↑{weather.today.tempMax}° ↓{weather.today.tempMin}°
-              {weather.today.precipitationProbability != null &&
-                ` · 💧${weather.today.precipitationProbability}%`}
-            </span>
-          </div>
-        </div>
-      )}
-    </Card>
+    </section>
   );
 }

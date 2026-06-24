@@ -1,19 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { Card } from './Card';
+import { Icon } from './Icon';
 import {
   calendarProvider,
   getCalendarUrl,
   setCalendarUrl,
   type CalendarEvent,
 } from '../lib/calendar';
-import { t } from '../lib/i18n';
+import { t, eventsToday } from '../lib/i18n';
 
 type Status = 'loading' | 'unconfigured' | 'ready' | 'error';
 
-function timeLabel(e: CalendarEvent): string {
-  if (e.allDay) return t('allDay');
-  const d = new Date(e.start);
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+function fmtTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function timeRange(e: CalendarEvent): string {
+  if (e.allDay) return 'All day';
+  return `${fmtTime(e.start)} – ${fmtTime(e.end)}`;
+}
+
+// 事件类型 → 图标 + 强调色（仿设计稿 videocam/restaurant）。
+function eventStyle(e: CalendarEvent): { symbol: string; color: string } {
+  const hay = `${e.title} ${e.location ?? ''}`.toLowerCase();
+  if (/(lunch|dinner|breakfast|coffee|restaurant|cafe|brunch)/.test(hay))
+    return { symbol: 'restaurant', color: '#984061' };
+  if (/(meet|sync|call|standup|1:1|zoom|hangout|video)/.test(hay))
+    return { symbol: 'videocam', color: '#3f51b5' };
+  return { symbol: 'calendar_today', color: '#3f51b5' };
 }
 
 export function Calendar() {
@@ -51,55 +64,79 @@ export function Calendar() {
   }
 
   const configured = status === 'ready' || status === 'error';
+  const showConnect = editing || status === 'unconfigured';
 
   return (
-    <Card
-      span={2}
-      title={t('calendar')}
-      aside={
-        configured ? (
-          <button className="link-btn" onClick={() => setEditing((v) => !v)}>
+    <section className="m3card card-calendar">
+      <div className="m3card__head">
+        <div className="m3card__head-l">
+          <span className="m3icon">
+            <Icon name="calendar_today" size={20} />
+          </span>
+          <span className="m3card__title">{t('calendar')}</span>
+        </div>
+        {configured && (
+          <button className="m3chip m3chip--soft" onClick={() => setEditing((v) => !v)}>
             {t('change')}
           </button>
-        ) : null
-      }
-    >
-      {editing || status === 'unconfigured' ? (
-        <div className="calendar__connect">
-          <p className="muted small">{t('calendarConnect')}</p>
-          <div className="calendar__connect-row">
+        )}
+      </div>
+
+      {showConnect ? (
+        <div className="cal__connect">
+          <span className="cal__msg">{t('calendarConnect')}</span>
+          <div className="cal__connect-row">
             <input
-              className="text-input"
+              className="cal__input"
               placeholder={t('calendarUrlPlaceholder')}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
-            <button className="link-btn" onClick={save}>
+            <button className="m3chip m3chip--filled" onClick={save}>
               {t('connect')}
             </button>
           </div>
         </div>
       ) : status === 'loading' ? (
-        <p className="muted">{t('loadingCalendar')}</p>
+        <div className="cal">
+          <span className="cal__msg">{t('loadingCalendar')}</span>
+        </div>
       ) : status === 'error' ? (
-        <p className="muted">{t('calendarError')}</p>
-      ) : events.length === 0 ? (
-        <p className="muted">{t('noEventsToday')}</p>
+        <div className="cal">
+          <span className="cal__msg">{t('calendarError')}</span>
+        </div>
       ) : (
-        <ul className="agenda">
-          {events.map((e, i) => (
-            <li key={`${e.start}-${i}`} className="agenda__item">
-              <span className="agenda__time">{timeLabel(e)}</span>
-              <span className="agenda__body">
-                <span className="agenda__title">{e.title}</span>
-                {e.location && (
-                  <span className="agenda__loc muted small">{e.location}</span>
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <div className="cal">
+            {events.length === 0 ? (
+              <span className="cal__msg">{t('noEventsToday')}</span>
+            ) : (
+              events.slice(0, 3).map((e, i) => {
+                const st = eventStyle(e);
+                return (
+                  <div className="cal__event" key={`${e.start}-${i}`}>
+                    <div className="cal__bar" style={{ background: st.color }} />
+                    <div className="cal__event-body">
+                      <div className="cal__event-title">{e.title}</div>
+                      <div className="cal__event-sub">
+                        <span className="mono">{timeRange(e)}</span>
+                        {e.location ? ` · ${e.location}` : ''}
+                      </div>
+                    </div>
+                    <Icon name={st.symbol} size={20} color={st.color} />
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <div className="cal__foot">
+            <span className="cal__count">{eventsToday(events.length)}</span>
+            <button className="m3chip m3chip--filled" onClick={() => setEditing(true)}>
+              {t('viewAll')}
+            </button>
+          </div>
+        </>
       )}
-    </Card>
+    </section>
   );
 }

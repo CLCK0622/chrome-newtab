@@ -6,7 +6,7 @@ import { Quote } from './components/Quote';
 import { Weather } from './components/Weather';
 import { UsageCard } from './components/UsageCard';
 import { Calendar } from './components/Calendar';
-import { QuickLinks } from './components/QuickLinks';
+import { Shortcuts } from './components/Shortcuts';
 import { loadSettings } from './lib/settings';
 import { t } from './lib/i18n';
 
@@ -15,28 +15,27 @@ export function App() {
 
   return (
     <main className="dashboard">
-      <header className="topbar">
-        <Greeting userName={settings.userName} />
-        <Clock />
-      </header>
+      <div className="container">
+        <header className="topbar">
+          <Greeting userName={settings.userName} />
+          <Clock />
+        </header>
 
-      <section className="hero">
-        <Quote />
-        <SearchBox />
-      </section>
+        <section className="hero">
+          <Quote />
+          <SearchBox />
+        </section>
 
-      <section className="main">
-        {/* 顶排五等分：天气(1) | Claude(1) | Codex(1) | 日历(span 2) */}
-        <div className="grid-top">
+        {/* 顶排：天气(1) | Claude(1) | Codex(1) | 日历(1.4) */}
+        <section className="grid">
           <Weather />
           <UsageCard provider="claude" title={t('claude')} />
           <UsageCard provider="codex" title={t('codex')} />
           <Calendar />
-        </div>
+        </section>
 
-        {/* 下方常用链接横向等分一排 */}
-        <QuickLinks />
-      </section>
+        <Shortcuts />
+      </div>
     </main>
   );
 }

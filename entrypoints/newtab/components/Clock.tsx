@@ -14,12 +14,10 @@ export function Clock() {
 
   return (
     <div className="clock">
-      <div className="clock__time">
-        <span>{pad(now.getHours())}</span>
-        <span className="clock__colon">:</span>
-        <span>{pad(now.getMinutes())}</span>
-        <span className="clock__seconds">{pad(now.getSeconds())}</span>
-      </div>
+      <span className="clock__d">{pad(now.getHours())}</span>
+      <span className="clock__colon">:</span>
+      <span className="clock__d">{pad(now.getMinutes())}</span>
+      <sup className="clock__sec">{pad(now.getSeconds())}</sup>
     </div>
   );
 }
