@@ -19,6 +19,8 @@ const en = {
 
   // 天气
   setCity: 'Set city',
+  locationMode: 'Location',
+  cityMode: 'City',
   searchCityPlaceholder: 'Search a city (e.g. Shanghai)',
   useMyLocation: 'Use my location',
   searching: 'Searching…',
@@ -34,6 +36,9 @@ const en = {
   resetsIn: 'Resets in',
   usageUpdated: 'Usage updated',
   ago: 'ago',
+  setEndpoint: 'Set endpoint',
+  endpointPlaceholder: 'Paste your usage endpoint URL',
+  endpointHint: 'Fetches the 5h / 7d windows from this URL. Empty = placeholder data.',
 
   // 快捷方式（Shortcuts）
   addShortcut: 'Add',
@@ -50,6 +55,7 @@ const en = {
   // 日历
   calendarConnect: 'Connect a calendar to see today’s agenda',
   calendarUrlPlaceholder: 'Paste your private iCal URL (.ics)',
+  addCalendar: 'Add calendar',
   connect: 'Connect',
   change: 'Change',
   viewAll: 'View all',

@@ -4,8 +4,11 @@ import {
   formatAgo,
   formatResetsIn,
   formatUsageValue,
+  getUsageEndpoint,
   getUsageSnapshotOnce,
   metricsFor,
+  resetUsageSnapshot,
+  setUsageEndpoint,
   WINDOW_LABEL,
   type UsageMetric,
   type UsageProviderId,
@@ -16,6 +19,9 @@ const PROVIDER_META: Record<UsageProviderId, { cls: string; symbol: string }> = 
   claude: { cls: 'card-claude', symbol: 'auto_awesome' },
   codex: { cls: 'card-codex', symbol: 'code' },
 };
+
+// 用量端点是全局共享的，一处改了通知所有用量卡刷新。
+const ENDPOINT_EVENT = 'newtab:usage-endpoint-changed';
 
 function WindowRow({ metric }: { metric: UsageMetric }) {
   const pct =
@@ -60,21 +66,40 @@ export function UsageCard({
   const [metrics, setMetrics] = useState<UsageMetric[] | null>(null);
   const [isMock, setIsMock] = useState(false);
   const [error, setError] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [url, setUrl] = useState('');
   const meta = PROVIDER_META[provider];
 
-  useEffect(() => {
-    let cancelled = false;
+  function load() {
+    setMetrics(null);
+    setError(false);
     getUsageSnapshotOnce()
       .then((snap) => {
-        if (cancelled) return;
         setMetrics(metricsFor(snap, provider));
         setIsMock(snap.source === 'mock');
       })
-      .catch(() => !cancelled && setError(true));
+      .catch(() => setError(true));
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    getUsageEndpoint().then((u) => !cancelled && setUrl(u));
+    load();
+    const onChange = () => load();
+    window.addEventListener(ENDPOINT_EVENT, onChange);
     return () => {
       cancelled = true;
+      window.removeEventListener(ENDPOINT_EVENT, onChange);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider]);
+
+  async function saveEndpoint() {
+    await setUsageEndpoint(url);
+    resetUsageSnapshot();
+    setEditing(false);
+    window.dispatchEvent(new Event(ENDPOINT_EVENT)); // 刷新两张用量卡
+  }
 
   const updatedAt = metrics && metrics.length > 0 ? metrics[0].updatedAt : null;
 
@@ -87,12 +112,43 @@ export function UsageCard({
           </span>
           <span className="m3card__title">{title}</span>
         </div>
-        {isMock && <span className="m3chip m3chip--badge">{t('placeholder')}</span>}
+        <div className="m3card__head-r">
+          {isMock && !editing && <span className="m3chip m3chip--badge">{t('placeholder')}</span>}
+          <button
+            className="m3chip m3chip--soft m3chip--icon"
+            title={t('setEndpoint')}
+            aria-label={t('setEndpoint')}
+            onClick={() => setEditing((v) => !v)}
+          >
+            ⚙
+          </button>
+        </div>
       </div>
 
-      {error && <p className="muted">{t('usageUnavailable')}</p>}
-      {!error && !metrics && <p className="muted">{t('loading')}</p>}
-      {metrics && metrics.length > 0 && (
+      {editing ? (
+        <div className="usage usage--config">
+          <input
+            className="cal__input"
+            placeholder={t('endpointPlaceholder')}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            autoFocus
+          />
+          <span className="cal__msg">{t('endpointHint')}</span>
+          <div className="usage__config-actions">
+            <button className="m3chip m3chip--filled" onClick={saveEndpoint}>
+              {t('save')}
+            </button>
+            <button className="m3chip m3chip--soft" onClick={() => setEditing(false)}>
+              {t('cancel')}
+            </button>
+          </div>
+        </div>
+      ) : error ? (
+        <p className="muted">{t('usageUnavailable')}</p>
+      ) : !metrics ? (
+        <p className="muted">{t('loading')}</p>
+      ) : metrics.length > 0 ? (
         <div className="usage">
           {metrics.map((m) => (
             <WindowRow key={`${m.provider}-${m.window}`} metric={m} />
@@ -109,6 +165,8 @@ export function UsageCard({
             </div>
           )}
         </div>
+      ) : (
+        <p className="muted">{t('usageUnavailable')}</p>
       )}
     </section>
   );

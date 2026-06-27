@@ -4,11 +4,12 @@
 // v3：支持「每 provider 多窗口」。同一 provider 在 metrics[] 中出现多条，
 //     以 window 区分（如 Claude 的 5 小时滚动限额 + 7 天周限额）。
 // v4：可选 resetsAt（窗口重置时刻）用于 M3 卡片的「Resets in」；updatedAt 复用为「Usage updated … ago」。
-//
-// 约定（与上游对齐时以此 shape 为准）：
-//   - 每条 metric = 某 provider 在某 window 下的一项计量。
-//   - used / limit 同单位；limit 为 null 表示「无上限 / 仅计量」。
-//   - updatedAt 为 ISO 字符串；resetsAt 可选，ISO，窗口下次清零时刻。
+// v4.1：架构定为「从一个可配置端点 URL fetch」。订阅制 5h/周限额无公开 API，真实数据
+//       要靠本机 runtime（EVO-77）解析会话日志暴露的 localhost 端点；扩展沙箱读不到本机文件。
+//       用户在用量卡里填端点 URL（存 chrome.storage），扩展从该 URL fetch 同一双窗口形状。
+//       本单不硬接：端点未填或 fetch 失败 → 回退占位 mock（source:'mock'）。
+
+import { storageGet, storageSet } from './storage';
 
 export type UsageProviderId = 'claude' | 'codex';
 
@@ -89,8 +90,60 @@ export const mockUsageProvider: UsageProvider = {
   },
 };
 
-/** 当前生效的 provider。EVO-77 接通后改这一行即可。 */
-export const usageProvider: UsageProvider = mockUsageProvider;
+// —— 可配置端点 ——
+// 用户填的端点 URL 存 chrome.storage.local（带 localStorage 兜底）。
+const ENDPOINT_KEY = 'newtab.usage.endpoint.v1';
+
+export async function getUsageEndpoint(): Promise<string> {
+  return storageGet<string>(ENDPOINT_KEY, '');
+}
+export async function setUsageEndpoint(url: string): Promise<void> {
+  await storageSet(ENDPOINT_KEY, url.trim());
+}
+
+// 校验端点返回的 JSON 是否符合 UsageSnapshot 双窗口形状。
+function coerceSnapshot(data: any): UsageSnapshot | null {
+  if (!data || !Array.isArray(data.metrics)) return null;
+  const metrics: UsageMetric[] = [];
+  for (const m of data.metrics) {
+    if (
+      (m?.provider === 'claude' || m?.provider === 'codex') &&
+      (m?.window === '5h' || m?.window === '7d') &&
+      typeof m?.used === 'number'
+    ) {
+      metrics.push({
+        provider: m.provider,
+        window: m.window,
+        used: m.used,
+        limit: typeof m.limit === 'number' ? m.limit : null,
+        unit: typeof m.unit === 'string' ? m.unit : '',
+        updatedAt: typeof m.updatedAt === 'string' ? m.updatedAt : new Date().toISOString(),
+        resetsAt: typeof m.resetsAt === 'string' ? m.resetsAt : undefined,
+      });
+    }
+  }
+  if (metrics.length === 0) return null;
+  return { metrics, source: 'endpoint' };
+}
+
+// 端点 provider：填了端点就 fetch，否则/失败回退占位 mock（本单不硬接）。
+export const endpointUsageProvider: UsageProvider = {
+  async getUsage(): Promise<UsageSnapshot> {
+    const url = await getUsageEndpoint();
+    if (!url) return mockUsageProvider.getUsage();
+    try {
+      const res = await fetch(url, { headers: { accept: 'application/json' } });
+      if (!res.ok) throw new Error(String(res.status));
+      const snap = coerceSnapshot(await res.json());
+      return snap ?? mockUsageProvider.getUsage();
+    } catch {
+      return mockUsageProvider.getUsage();
+    }
+  },
+};
+
+/** 当前生效的 provider。EVO-77 端点定稿后无需改码，用户填 URL 即生效。 */
+export const usageProvider: UsageProvider = endpointUsageProvider;
 
 // Claude / Codex 拆成两个独立卡片，但共用同一份快照（一次拉取）。
 let snapshotPromise: Promise<UsageSnapshot> | null = null;
@@ -98,6 +151,11 @@ let snapshotPromise: Promise<UsageSnapshot> | null = null;
 export function getUsageSnapshotOnce(): Promise<UsageSnapshot> {
   if (!snapshotPromise) snapshotPromise = usageProvider.getUsage();
   return snapshotPromise;
+}
+
+/** 端点变更后清缓存，下次读取重新拉。 */
+export function resetUsageSnapshot(): void {
+  snapshotPromise = null;
 }
 
 /** 取某 provider 的全部窗口 metric，按 WINDOW_ORDER 稳定排序。 */

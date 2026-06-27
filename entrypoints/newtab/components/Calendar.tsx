@@ -19,7 +19,6 @@ function timeRange(e: CalendarEvent): string {
   return `${fmtTime(e.start)} – ${fmtTime(e.end)}`;
 }
 
-// 事件类型 → 图标 + 强调色（仿设计稿 videocam/restaurant）。
 function eventStyle(e: CalendarEvent): { symbol: string; color: string } {
   const hay = `${e.title} ${e.location ?? ''}`.toLowerCase();
   if (/(lunch|dinner|breakfast|coffee|restaurant|cafe|brunch)/.test(hay))
@@ -64,7 +63,6 @@ export function Calendar() {
   }
 
   const configured = status === 'ready' || status === 'error';
-  const showConnect = editing || status === 'unconfigured';
 
   return (
     <section className="m3card card-calendar">
@@ -82,20 +80,38 @@ export function Calendar() {
         )}
       </div>
 
-      {showConnect ? (
+      {editing ? (
+        // 编辑/粘贴 .ics 入口
         <div className="cal__connect">
           <span className="cal__msg">{t('calendarConnect')}</span>
-          <div className="cal__connect-row">
-            <input
-              className="cal__input"
-              placeholder={t('calendarUrlPlaceholder')}
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
+          <input
+            className="cal__input cal__input--block"
+            placeholder={t('calendarUrlPlaceholder')}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            autoFocus
+          />
+          <div className="cal__connect-actions">
             <button className="m3chip m3chip--filled" onClick={save}>
               {t('connect')}
             </button>
+            <button className="m3chip m3chip--soft" onClick={() => setEditing(false)}>
+              {t('cancel')}
+            </button>
           </div>
+        </div>
+      ) : status === 'unconfigured' ? (
+        // 未配置：显眼的「Add calendar」入口
+        <div className="cal__empty">
+          <Icon name="calendar_month" size={34} color="var(--accent)" />
+          <span className="cal__msg">{t('calendarConnect')}</span>
+          <button
+            className="m3chip m3chip--filled cal__add-btn"
+            onClick={() => setEditing(true)}
+          >
+            <Icon name="add" size={16} />
+            {t('addCalendar')}
+          </button>
         </div>
       ) : status === 'loading' ? (
         <div className="cal">

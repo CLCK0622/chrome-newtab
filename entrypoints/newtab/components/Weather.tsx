@@ -94,11 +94,12 @@ export function Weather() {
     loadFor(saved.latitude, saved.longitude);
   }
 
-  async function useMyLocation() {
+  // 用户主动选「用电脑定位」
+  async function useDeviceLocation() {
     setEditing(false);
-    setStatus('locating');
     setCity(null);
     saveSettings({ ...loadSettings(), city: null });
+    setStatus('locating');
     try {
       const pos = await getBrowserLocation();
       loadFor(pos.latitude, pos.longitude);
@@ -107,8 +108,13 @@ export function Weather() {
     }
   }
 
-  // 头部图标固定 partly_cloudy_day（与设计稿一致，且在本地打包的图标子集内）。
-  const headSymbol = 'partly_cloudy_day';
+  // 用户主动选「手动选城市」
+  function chooseCityMode() {
+    setEditing(true);
+  }
+
+  const locationActive = !city && !editing;
+  const cityActive = !!city || editing;
   const locationLabel = city ? city.name : t('currentLocation');
 
   return (
@@ -116,12 +122,28 @@ export function Weather() {
       <div className="m3card__head">
         <div className="m3card__head-l">
           <span className="m3icon">
-            <Icon name={headSymbol} size={20} />
+            <Icon name="partly_cloudy_day" size={20} />
           </span>
           <span className="m3card__title">{t('weather')}</span>
         </div>
-        <button className="m3chip m3chip--soft" onClick={() => setEditing((v) => !v)}>
-          {city ? city.name : t('setCity')}
+      </div>
+
+      {/* 显式二选一：用电脑定位 / 手动选城市 */}
+      <div className="seg seg--weather">
+        <button
+          className={`seg__btn${locationActive ? ' seg__btn--on' : ''}`}
+          onClick={useDeviceLocation}
+          title={t('useMyLocation')}
+        >
+          <Icon name="location_on" size={14} />
+          {t('locationMode')}
+        </button>
+        <button
+          className={`seg__btn${cityActive ? ' seg__btn--on' : ''}`}
+          onClick={chooseCityMode}
+          title={t('setCity')}
+        >
+          {t('cityMode')}
         </button>
       </div>
 
@@ -129,15 +151,12 @@ export function Weather() {
         <div className="weather__body">
           <div className="weather__editor">
             <input
-              className="cal__input"
+              className="cal__input cal__input--block"
               placeholder={t('searchCityPlaceholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               autoFocus
             />
-            <button className="m3chip m3chip--soft weather__btn" onClick={useMyLocation}>
-              {t('useMyLocation')}
-            </button>
             {searching && <span className="cal__msg">{t('searching')}</span>}
             {hits.length > 0 && (
               <ul className="weather__hits">
@@ -179,10 +198,7 @@ export function Weather() {
         <div className="weather__body">
           <Icon name="location_off" size={34} color="var(--accent)" />
           <div className="weather__msg">{t('cantLocate')}</div>
-          <button
-            className="m3chip m3chip--filled weather__btn"
-            onClick={() => setEditing(true)}
-          >
+          <button className="m3chip m3chip--filled weather__btn" onClick={chooseCityMode}>
             {t('pickCity')}
           </button>
         </div>

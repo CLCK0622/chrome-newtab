@@ -7,9 +7,9 @@
 ## 功能
 
 - **Greeting + date**（左上，按时段 Good Morning / Afternoon / Evening，date pill）+ **live clock**（右上，Roboto Mono，蓝色冒号 + 秒数 pill）。
-- **Weather**：Open-Meteo（免 key）。优先浏览器定位，可手动搜索/切换城市（localStorage 记忆）。M3 绿色 tonal 卡。
-- **Usage**：Claude（紫）/ Codex（粉）**各占独立 tonal 卡**，每卡展示**双窗口（5h + 7d）**用量/上限/进度条 + 「Resets in」+「Usage updated … ago」；占位数据；接口 `UsageProvider`（`lib/usage.ts`），EVO-77 就绪后替换 `usageProvider` 一行即可。
-- **Calendar**（略宽 1.4fr，蓝色 tonal 卡）：`CalendarProvider` 接口 + iCal secret-URL 路径（粘贴私密 .ics → fetch + 客户端解析，存 `chrome.storage.local`），OAuth 预留。未配置显示连接入口；已连接显示今日事件（彩色左条 + 类型图标 + View all）。
+- **Weather**：Open-Meteo（免 key）。卡上**显式二选一**：`Location`（用电脑定位）/ `City`（手动搜索选城市），用户主动切换，不必等定位失败才退化（城市存 localStorage 记忆）。M3 绿色 tonal 卡。
+- **Usage**：Claude（紫）/ Codex（粉）**各占独立 tonal 卡**，每卡展示**双窗口（5h + 7d）**用量/上限/进度条 + 「Resets in」+「Usage updated … ago」。架构为「从**可配置端点 URL** fetch」（订阅制无公开 API，真实数据靠本机 runtime / EVO-77 暴露的 localhost 端点）；卡头 ⚙ 入口可填端点 URL（存 `chrome.storage`）。**本单不硬接**：端点未填/失败回退占位 mock。数据形状＝双窗口 `UsageMetric`（每 provider 多条，以 window 区分）。
+- **Calendar**（略宽 1.4fr，蓝色 tonal 卡）：`CalendarProvider` 接口 + iCal secret-URL 路径（粘贴私密 .ics → fetch + 客户端解析，存 `chrome.storage.local`），OAuth 预留。未配置显示**显眼的「+ Add calendar」入口**；已连接显示今日事件（彩色左条 + 类型图标 + View all），头部 Change 可改。
 - **Shortcuts**（原 Quick Links）：M3 圆形 tonal 图标块（上 favicon/首字母 / 下标签），用户可编辑（增/删/改 + 排序），存 `chrome.storage.local`（localStorage 兜底）。**不读 `chrome.bookmarks`，无 `bookmarks` 权限。**
 - **每日一句** + **搜索框**（即聚焦，回车 Google 搜索或网址直达）。
 
