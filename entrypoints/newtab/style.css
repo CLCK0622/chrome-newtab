@@ -71,7 +71,9 @@ body {
 }
 .container {
   width: 100%;
-  max-width: 1280px;
+  /* 宽屏更充分利用横向空间，但不拉到满宽（卡片过宽难看）。
+     ~1800px 上限：四卡各 ~390px、日历 ~550px，M3 比例协调。 */
+  max-width: 1800px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -196,9 +198,11 @@ body {
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1.4fr;
-  gap: 18px;
+  gap: 24px;
   flex: 1 1 auto;
   min-height: 0;
+  /* 高屏上别把单行卡片拉得过高（比例失衡）；矮屏仍按 flex 填满、不溢出。 */
+  max-height: 480px;
 }
 
 .m3card {
